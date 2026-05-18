@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chicken Count Calculator — House of Taouk</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f0f0f0; color: #1a1a1a; min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 720px; margin: 0 auto; }
+
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+
+  .rule-bar { display: flex; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .rule-pill { background: #fff; border: 1px solid #ddd; border-radius: 20px; padding: 5px 14px; font-size: 13px; color: #555; }
+  .rule-pill strong { color: #1a1a1a; }
+
+  /* Upload zone */
+  .upload-zone { border: 2px dashed #bbb; border-radius: 12px; background: #fff; padding: 2rem; text-align: center; cursor: pointer; margin-bottom: 1.5rem; transition: border-color 0.2s, background 0.2s; }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: #555; background: #f8f8f8; }
+  .upload-zone input[type=file] { display: none; }
+  .upload-zone .icon { font-size: 36px; margin-bottom: 8px; }
+  .upload-zone p { font-size: 14px; color: #555; }
+  .upload-zone p strong { color: #1a1a1a; }
+  .upload-zone .hint { font-size: 12px; color: #999; margin-top: 4px; }
+  .upload-zone.has-file { border-style: solid; border-color: #4a7c3f; background: #f4fbf0; }
+  .upload-zone.has-file p { color: #2d5a25; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 2px; background: #ddd; border-radius: 8px; padding: 3px; margin-bottom: 1.5rem; }
+  .tab-btn { flex: 1; padding: 7px; font-size: 13px; border: none; background: transparent; border-radius: 6px; cursor: pointer; color: #666; }
+  .tab-btn.active { background: #fff; color: #1a1a1a; font-weight: 600; border: 1px solid #ccc; }
+
+  /* Manual entry */
+  .entry-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .entry-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 1rem; }
+  .entry-card .lbl { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .entry-card .sub { font-size: 11px; color: #999; margin-bottom: 8px; }
+  .entry-card input[type=number] { width: 100%; font-size: 24px; font-weight: 700; text-align: center; background: #f5f5f5; border: 1px solid #ccc; border-radius: 8px; padding: 8px; }
+  .entry-card input:focus { outline: none; border-color: #888; }
+  .qtr-card .lbl { color: #3B6D11; }
+  .half-card .lbl { color: #185FA5; }
+  .full-card .lbl { color: #A32D2D; }
+
+  /* Report table */
+  .report-wrap { background: #fff; border: 1px solid #ddd; border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
+  .report-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .report-wrap th { background: #fafafa; padding: 8px 12px; text-align: left; font-weight: 600; color: #555; border-bottom: 1px solid #eee; }
+  .report-wrap th:not(:first-child) { text-align: center; }
+  .report-wrap td { padding: 7px 12px; border-bottom: 1px solid #f0f0f0; }
+  .report-wrap td:not(:first-child) { text-align: center; }
+  .report-wrap tr:last-child td { border-bottom: none; }
+  .report-wrap .cat-row td { background: #f7f7f7; font-weight: 700; font-size: 12px; color: #888; letter-spacing: 0.05em; text-transform: uppercase; }
+  .report-wrap .total-row td { background: #f0f0f0; font-weight: 700; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .badge-qtr  { background: #EAF3DE; color: #3B6D11; }
+  .badge-half { background: #E6F1FB; color: #185FA5; }
+  .badge-full { background: #FCEBEB; color: #A32D2D; }
+  .no-data { padding: 2rem; text-align: center; color: #aaa; font-size: 14px; }
+
+  /* Breakdown */
+  .result-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+  .result-card h2 { font-size: 15px; font-weight: 700; margin-bottom: 1rem; }
+  .brow { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+  .brow:last-child { border-bottom: none; }
+  .brow .desc { color: #666; }
+  .brow .val  { font-weight: 600; }
+
+  /* Total */
+  .total-band { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
+  .total-band .tl { font-size: 15px; color: #555; }
+  .total-band .tn { font-size: 36px; font-weight: 700; }
+  .total-band .tu { font-size: 14px; color: #888; margin-left: 6px; }
+
+  .foot-note { font-size: 12px; color: #bbb; text-align: center; }
+
+  .error-msg { background: #fff0f0; border: 1px solid #f5c6c6; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #a32d2d; margin-bottom: 1rem; display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>🍗 Chicken Count Calculator</h1>
+  <p class="subtitle">House of Taouk — daily sales tracker</p>
+
+  <div class="rule-bar">
+    <div class="rule-pill"><strong>4</strong> Qtr = 1 chicken</div>
+    <div class="rule-pill"><strong>2</strong> Half = 1 chicken</div>
+    <div class="rule-pill"><strong>1</strong> Full = 1 chicken</div>
+  </div>
+
+  <!-- Upload zone -->
+  <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <input type="file" id="fileInput" accept=".xls,.xlsx,.html,.htm" onchange="handleFile(this.files[0])" />
+    <div class="icon">📂</div>
+    <p><strong>Upload today's item report</strong></p>
+    <p class="hint">Click or drag & drop — .xls / .xlsx file from your POS system</p>
+  </div>
+  <div class="error-msg" id="errorMsg"></div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('report')">From report</button>
+    <button class="tab-btn" onclick="showTab('manual')">Manual entry</button>
+  </div>
+
+  <!-- Report tab -->
+  <div id="report-tab">
+    <div class="report-wrap">
+      <div class="no-data" id="noDataMsg">Upload a report file above to see items</div>
+      <table id="reportTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Type</th>
+            <th>Qty sold</th>
+          </tr>
+        </thead>
+        <tbody id="reportBody"></tbody>
+        <tfoot id="reportFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Manual tab -->
+  <div id="manual-tab" style="display:none;">
+    <div class="entry-grid">
+      <div class="entry-card qtr-card">
+        <div class="lbl">Quarter</div>
+        <div class="sub">4 qtrs = 1 chicken</div>
+        <input type="number" id="mQtr" min="0" value="0" oninput="calcManual()" />
+      </div>
+      <div class="entry-card half-card">
+        <div class="lbl">Half</div>
+        <div class="sub">2 halves = 1 chicken</div>
+        <input type="number" id="mHalf" min="0" value="0" oninput="calcManual()" />
+      </div>
+      <div class="entry-card full-card">
+        <div class="lbl">Full</div>
+        <div class="sub">1 full = 1 chicken</div>
+        <input type="number" id="mFull" min="0" value="0" oninput="calcManual()" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Breakdown -->
+  <div class="result-card">
+    <h2>Breakdown</h2>
+    <div class="brow"><span class="desc" id="dQtr">0 quarters ÷ 4</span><span class="val" id="vQtr">0.00 chickens</span></div>
+    <div class="brow"><span class="desc" id="dHalf">0 halves ÷ 2</span><span class="val" id="vHalf">0.00 chickens</span></div>
+    <div class="brow"><span class="desc" id="dFull">0 fulls × 1</span><span class="val" id="vFull">0.00 chickens</span></div>
+  </div>
+
+  <div class="total-band">
+    <div class="tl">Total chickens sold</div>
+    <div><span class="tn" id="totalDisplay">0.00</span><span class="tu">chickens</span></div>
+  </div>
+
+  <p class="foot-note" id="footNote">No report loaded</p>
+</div>
+
+<script>
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function updateDisplay(qtr, half, full) {
+  const qC = qtr / 4, hC = half / 2, fC = full;
+  const total = qC + hC + fC;
+  document.getElementById('dQtr').textContent  = `${qtr} quarter${qtr !== 1 ? 's' : ''} ÷ 4`;
+  document.getElementById('dHalf').textContent = `${half} half${half !== 1 ? 's' : ''} ÷ 2`;
+  document.getElementById('dFull').textContent = `${full} full${full !== 1 ? 's' : ''} × 1`;
+  document.getElementById('vQtr').textContent  = qC.toFixed(2) + ' chickens';
+  document.getElementById('vHalf').textContent = hC.toFixed(2) + ' chickens';
+  document.getElementById('vFull').textContent = fC.toFixed(2) + ' chickens';
+  document.getElementById('totalDisplay').textContent = total.toFixed(2);
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  document.getElementById('report-tab').style.display = tab === 'report' ? 'block' : 'none';
+  document.getElementById('manual-tab').style.display = tab === 'manual' ? 'block' : 'none';
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && tab === 'report') || (i === 1 && tab === 'manual'));
+  });
+  if (tab === 'manual') calcManual();
+}
+
+// ── Manual entry calc ──────────────────────────────────────────────────────
+function calcManual() {
+  const qtr  = parseFloat(document.getElementById('mQtr').value)  || 0;
+  const half = parseFloat(document.getElementById('mHalf').value) || 0;
+  const full = parseFloat(document.getElementById('mFull').value) || 0;
+  updateDisplay(qtr, half, full);
+}
+
+// ── Drag & drop ────────────────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+// ── File handling ──────────────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file) return;
+  showError('');
+  const name = file.name.toLowerCase();
+  if (!name.endsWith('.xls') && !name.endsWith('.xlsx') && !name.endsWith('.html') && !name.endsWith('.htm')) {
+    showError('Unsupported file type. Please upload the .xls or .xlsx report from your POS system.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const content = e.target.result;
+      // Detect if it's an HTML-based XLS (common with POS exports)
+      if (typeof content === 'string' && content.trim().startsWith('<')) {
+        parseHtmlReport(content, file.name);
+      } else {
+        // Binary XLSX — use SheetJS
+        parseXlsxReport(e.target.result, file.name);
+      }
+    } catch(err) {
+      showError('Could not read the file: ' + err.message);
+    }
+  };
+  // Try reading as text first (HTML-based XLS)
+  if (name.endsWith('.xlsx')) {
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.readAsText(file);
+  }
+  // Update upload zone
+  dropZone.classList.add('has-file');
+  dropZone.querySelector('p').innerHTML = `<strong>✅ ${file.name}</strong>`;
+  dropZone.querySelector('.hint').textContent = 'Click to load a different file';
+  document.getElementById('footNote').textContent = 'Report: ' + file.name;
+}
+
+// ── Parse HTML-based XLS (like the POS export) ─────────────────────────────
+function parseHtmlReport(html, filename) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const rows = doc.querySelectorAll('tr');
+
+  // Get report date from the HTML if present
+  let reportDate = '';
+  rows.forEach(row => {
+    const text = row.textContent.trim();
+    const dateMatch = text.match(/From\s+(\d{2}-\d{2}-\d{4})/i);
+    if (dateMatch) reportDate = dateMatch[1];
+  });
+
+  const items = [];
+  let currentCategory = '';
+
+  rows.forEach(row => {
+    const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim());
+    if (!cells.length) return;
+
+    // Category header row (single non-empty cell, not a total)
+    if (cells.length === 1 && cells[0] && !cells[0].toLowerCase().includes('total')) {
+      currentCategory = cells[0];
+      return;
+    }
+
+    // Skip totals and sub-totals
+    if (cells[0] && cells[0].toLowerCase().includes('total')) return;
+
+    // Item row: [empty, name, sku/desc, qty, price]
+    if (cells.length >= 4 && cells[1]) {
+      const name = cells[1];
+      const qty  = parseFloat(cells[cells.length - 2]) || 0;
+
+      // Only include chicken items (Al Faham / Mandi) — skip drinks, bread, etc.
+      const isChicken = /al faham|mandi|yemeni|faham/i.test(name);
+      if (!isChicken) return;
+
+      // Determine portion type
+      let type = null;
+      if (/\bqtr\b|\bquarter\b/i.test(name))  type = 'qtr';
+      else if (/\bhalf\b/i.test(name))         type = 'half';
+      else if (/\bfull\b/i.test(name))         type = 'full';
+
+      if (type) {
+        items.push({ category: currentCategory, name, type, qty });
+      }
+    }
+  });
+
+  if (!items.length) {
+    showError('No chicken items (Quarter / Half / Full) were found in this report. Make sure it is the correct item summary file.');
+    return;
+  }
+
+  if (reportDate) document.getElementById('footNote').textContent = 'Report date: ' + reportDate;
+  renderReportTable(items);
+}
+
+// ── Parse binary XLSX using SheetJS ────────────────────────────────────────
+function parseXlsxReport(buffer, filename) {
+  if (typeof XLSX === 'undefined') {
+    showError('SheetJS library not loaded. Please check your internet connection and try again.');
+    return;
+  }
+  const wb = XLSX.read(buffer, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+  const items = [];
+  let currentCategory = '';
+
+  data.forEach(row => {
+    const cells = row.map(c => String(c).trim());
+    if (!cells.length) return;
+    if (cells.length === 1 && cells[0] && !cells[0].toLowerCase().includes('total')) {
+      currentCategory = cells[0]; return;
+    }
+    if (cells[0] && cells[0].toLowerCase().includes('total')) return;
+    if (cells.length >= 4 && cells[1]) {
+      const name = cells[1];
+      const qty  = parseFloat(cells[cells.length - 2]) || 0;
+      const isChicken = /al faham|mandi|yemeni|faham/i.test(name);
+      if (!isChicken) return;
+      let type = null;
+      if (/\bqtr\b|\bquarter\b/i.test(name))  type = 'qtr';
+      else if (/\bhalf\b/i.test(name))         type = 'half';
+      else if (/\bfull\b/i.test(name))         type = 'full';
+      if (type) items.push({ category: currentCategory, name, type, qty });
+    }
+  });
+
+  if (!items.length) {
+    showError('No chicken items found in the XLSX file.');
+    return;
+  }
+  renderReportTable(items);
+}
+
+// ── Render report table & calculate ────────────────────────────────────────
+function renderReportTable(items) {
+  const tbody = document.getElementById('reportBody');
+  const tfoot = document.getElementById('reportFoot');
+  tbody.innerHTML = '';
+
+  let lastCat = '';
+  items.forEach(item => {
+    if (item.category !== lastCat) {
+      lastCat = item.category;
+      const catRow = document.createElement('tr');
+      catRow.className = 'cat-row';
+      catRow.innerHTML = `<td colspan="3">${item.category}</td>`;
+      tbody.appendChild(catRow);
+    }
+    const badgeClass = item.type === 'qtr' ? 'badge-qtr' : item.type === 'half' ? 'badge-half' : 'badge-full';
+    const label      = item.type === 'qtr' ? 'Quarter'   : item.type === 'half' ? 'Half'        : 'Full';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${item.name}</td><td><span class="badge ${badgeClass}">${label}</span></td><td>${item.qty}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const totalQty  = items.reduce((s, i) => s + i.qty, 0);
+  const totalQtr  = items.filter(i => i.type === 'qtr' ).reduce((s, i) => s + i.qty, 0);
+  const totalHalf = items.filter(i => i.type === 'half').reduce((s, i) => s + i.qty, 0);
+  const totalFull = items.filter(i => i.type === 'full').reduce((s, i) => s + i.qty, 0);
+
+  tfoot.innerHTML = `<tr class="total-row"><td>Totals</td><td></td><td>${totalQty}</td></tr>`;
+
+  document.getElementById('noDataMsg').style.display  = 'none';
+  document.getElementById('reportTable').style.display = '';
+
+  updateDisplay(totalQtr, totalHalf, totalFull);
+
+  // Switch to report tab automatically
+  showTab('report');
+}
+</script>
+
+<!-- SheetJS for binary XLSX support -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+</body>
+</html>
