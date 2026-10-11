@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chicken Count Calculator — House of Taouk</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f0f0f0; color: #1a1a1a; min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 760px; margin: 0 auto; }
+
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+
+  .rule-bar { display: flex; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .rule-pill { background: #fff; border: 1px solid #ddd; border-radius: 20px; padding: 5px 14px; font-size: 13px; color: #555; }
+  .rule-pill strong { color: #1a1a1a; }
+
+  .upload-zone { border: 2px dashed #bbb; border-radius: 12px; background: #fff; padding: 2rem; text-align: center; cursor: pointer; margin-bottom: 1rem; transition: border-color .2s, background .2s; }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: #555; background: #f8f8f8; }
+  .upload-zone input[type=file] { display: none; }
+  .upload-zone .icon { font-size: 36px; margin-bottom: 8px; }
+  .upload-zone p { font-size: 14px; color: #555; }
+  .upload-zone p strong { color: #1a1a1a; }
+  .upload-zone .hint { font-size: 12px; color: #999; margin-top: 4px; }
+  .upload-zone.has-file { border-style: solid; border-color: #4a7c3f; background: #f4fbf0; }
+  .upload-zone.has-file p { color: #2d5a25; }
+
+  .error-msg { background: #fff0f0; border: 1px solid #f5c6c6; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #a32d2d; margin-bottom: 1rem; display: none; white-space: pre-line; line-height: 1.6; }
+  .warn-msg  { background: #fffbe6; border: 1px solid #f0d060; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #7a5c00; margin-bottom: 1rem; display: none; }
+
+  .tabs { display: flex; gap: 2px; background: #ddd; border-radius: 8px; padding: 3px; margin-bottom: 1.5rem; }
+  .tab-btn { flex: 1; padding: 7px; font-size: 13px; border: none; background: transparent; border-radius: 6px; cursor: pointer; color: #666; }
+  .tab-btn.active { background: #fff; color: #1a1a1a; font-weight: 600; border: 1px solid #ccc; }
+
+  .entry-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .entry-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 1rem; }
+  .entry-card .lbl { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .entry-card .sub { font-size: 11px; color: #999; margin-bottom: 8px; }
+  .entry-card input[type=number] { width: 100%; font-size: 24px; font-weight: 700; text-align: center; background: #f5f5f5; border: 1px solid #ccc; border-radius: 8px; padding: 8px; }
+  .entry-card input:focus { outline: none; border-color: #888; }
+  .qtr-card  .lbl { color: #3B6D11; }
+  .half-card .lbl { color: #185FA5; }
+  .full-card .lbl { color: #A32D2D; }
+
+  .report-wrap { background: #fff; border: 1px solid #ddd; border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
+  .report-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .report-wrap th { background: #fafafa; padding: 8px 12px; text-align: left; font-weight: 600; color: #555; border-bottom: 1px solid #eee; }
+  .report-wrap th.r { text-align: right; }
+  .report-wrap td { padding: 7px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  .report-wrap td.r { text-align: right; }
+  .report-wrap .cat-row td { background: #f7f7f7; font-weight: 700; font-size: 11px; color: #888; letter-spacing: .05em; text-transform: uppercase; padding: 5px 12px; }
+  .report-wrap .total-row td { background: #f0f0f0; font-weight: 700; }
+  .report-wrap .bulk-row { background: #fffbe6; }
+  .report-wrap tr:last-child td { border-bottom: none; }
+  .no-data { padding: 2.5rem; text-align: center; color: #aaa; font-size: 14px; }
+
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .badge-qtr  { background: #EAF3DE; color: #3B6D11; }
+  .badge-half { background: #E6F1FB; color: #185FA5; }
+  .badge-full { background: #FCEBEB; color: #A32D2D; }
+  .badge-bulk { background: #FFF3CD; color: #7a5c00; }
+
+  .result-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; }
+  .result-card h2 { font-size: 15px; font-weight: 700; margin-bottom: 1rem; }
+  .brow { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+  .brow:last-child { border-bottom: none; }
+  .brow .desc { color: #666; }
+  .brow .val  { font-weight: 600; }
+
+  .total-band { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
+  .total-band .tl { font-size: 15px; color: #555; }
+  .total-band .tn { font-size: 36px; font-weight: 700; }
+  .total-band .tu { font-size: 14px; color: #888; margin-left: 6px; }
+
+  .foot-note { font-size: 12px; color: #bbb; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>🍗 Chicken Count Calculator</h1>
+  <p class="subtitle">House of Taouk — daily sales tracker</p>
+
+  <div class="rule-bar">
+    <div class="rule-pill"><strong>4</strong> Qtr = 1 chicken</div>
+    <div class="rule-pill"><strong>2</strong> Half = 1 chicken</div>
+    <div class="rule-pill"><strong>1</strong> Full = 1 chicken</div>
+  </div>
+
+  <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <input type="file" id="fileInput" accept=".xls,.xlsx" onchange="handleFile(this.files[0])" />
+    <div class="icon">📂</div>
+    <p><strong>Upload today's item report</strong></p>
+    <p class="hint">Supports: Item Summary .xls &nbsp;|&nbsp; Outlet-Item Wise Report .xlsx</p>
+  </div>
+  <div class="error-msg" id="errorMsg"></div>
+  <div class="warn-msg"  id="warnMsg"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('report')">From report</button>
+    <button class="tab-btn"        onclick="showTab('manual')">Manual entry</button>
+  </div>
+
+  <!-- Report tab -->
+  <div id="report-tab">
+    <div class="report-wrap">
+      <div class="no-data" id="noDataMsg">Upload a report file above to see items</div>
+      <table id="reportTable" style="display:none">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Category</th>
+            <th>Type</th>
+            <th class="r">Qty</th>
+          </tr>
+        </thead>
+        <tbody id="reportBody"></tbody>
+        <tfoot  id="reportFoot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- Manual tab -->
+  <div id="manual-tab" style="display:none">
+    <div class="entry-grid">
+      <div class="entry-card qtr-card">
+        <div class="lbl">Quarter</div>
+        <div class="sub">4 qtrs = 1 chicken</div>
+        <input type="number" id="mQtr" min="0" value="0" oninput="calcManual()" />
+      </div>
+      <div class="entry-card half-card">
+        <div class="lbl">Half</div>
+        <div class="sub">2 halves = 1 chicken</div>
+        <input type="number" id="mHalf" min="0" value="0" oninput="calcManual()" />
+      </div>
+      <div class="entry-card full-card">
+        <div class="lbl">Full</div>
+        <div class="sub">1 full = 1 chicken</div>
+        <input type="number" id="mFull" min="0" value="0" oninput="calcManual()" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Breakdown -->
+  <div class="result-card">
+    <h2>Breakdown</h2>
+    <div class="brow"><span class="desc" id="dQtr">0 quarters ÷ 4</span><span class="val" id="vQtr">0.00 chickens</span></div>
+    <div class="brow"><span class="desc" id="dHalf">0 halves ÷ 2</span><span class="val" id="vHalf">0.00 chickens</span></div>
+    <div class="brow"><span class="desc" id="dFull">0 fulls × 1</span><span class="val" id="vFull">0.00 chickens</span></div>
+  </div>
+
+  <div class="total-band">
+    <div class="tl">Total chickens sold</div>
+    <div><span class="tn" id="totalDisplay">0.00</span><span class="tu">chickens</span></div>
+  </div>
+
+  <p class="foot-note" id="footNote">No report loaded</p>
+</div>
+
+<!-- SheetJS CDN for XLSX parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Portion detection
+// ─────────────────────────────────────────────────────────────────────────────
+// Items explicitly excluded (non-chicken items that might contain keywords like "half")
+const EXCLUDE = /mayonnaise|juice|bread|kuboos|rumali|pepsi|water|ice.?cream|shake|rice\s+only|dip|sip.?up|exchange/i;
+
+// Bulk combo items: contain a chicken portion + something else (e.g. "Qtr + Lime Juice")
+// We count only the chicken half of the combo per unit sold
+const BULK_QTR  = /\bqtr\b.*\+|\bquarter\b.*\+/i;
+const BULK_HALF = /\bhalf\b.*\+/i;
+
+// Core chicken item check — must match to be considered chicken
+const IS_CHICKEN = /al.?faham|alfaham|iffa.*chicken|yemeni|chicken.*mandi|mandi.*chicken/i;
+
+// Non-portion chicken dishes to exclude (biryani, rice dishes — not counted as Qtr/Half/Full)
+const EXCLUDE_DISH = /biryani|biriyani/i;
+
+function detectType(name) {
+  // Check bulk combos FIRST — before the exclude filter,
+  // because combo names contain excluded words (e.g. "Qtr + Lime Juice" has "juice")
+  if (BULK_QTR.test(name))  return 'bulk_qtr';
+  if (BULK_HALF.test(name)) return 'bulk_half';
+
+  // Now apply the exclude filter for standalone non-chicken items
+  if (EXCLUDE.test(name))      return null;
+  if (EXCLUDE_DISH.test(name)) return null;
+
+  // Must be a chicken item
+  if (!IS_CHICKEN.test(name)) return null;
+
+  if (/\bqtr\b|\bquarter\b/i.test(name)) return 'qtr';
+  if (/\bhalf\b/i.test(name))            return 'half';
+  if (/\bfull\b/i.test(name))            return 'full';
+
+  return null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI helpers
+// ─────────────────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+function showError(m) { $('errorMsg').textContent = m; $('errorMsg').style.display = m ? 'block' : 'none'; }
+function showWarn(m)  { $('warnMsg').textContent  = m; $('warnMsg').style.display  = m ? 'block' : 'none'; }
+
+function showTab(tab) {
+  $('report-tab').style.display = tab === 'report' ? 'block' : 'none';
+  $('manual-tab').style.display = tab === 'manual' ? 'block' : 'none';
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && tab === 'report') || (i === 1 && tab === 'manual'));
+  });
+  if (tab === 'manual') calcManual();
+}
+
+function calcManual() {
+  updateDisplay(
+    parseFloat($('mQtr').value)  || 0,
+    parseFloat($('mHalf').value) || 0,
+    parseFloat($('mFull').value) || 0
+  );
+}
+
+function updateDisplay(qtr, half, full) {
+  const qC = qtr / 4, hC = half / 2, fC = full;
+  $('dQtr').textContent  = `${qtr} quarter${qtr !== 1 ? 's' : ''} ÷ 4`;
+  $('dHalf').textContent = `${half} half${half !== 1 ? 's' : ''} ÷ 2`;
+  $('dFull').textContent = `${full} full${full !== 1 ? 's' : ''} × 1`;
+  $('vQtr').textContent  = qC.toFixed(2) + ' chickens';
+  $('vHalf').textContent = hC.toFixed(2) + ' chickens';
+  $('vFull').textContent = fC.toFixed(2) + ' chickens';
+  $('totalDisplay').textContent = (qC + hC + fC).toFixed(2);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Drag & drop
+// ─────────────────────────────────────────────────────────────────────────────
+const dropZone = $('dropZone');
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// File entry point — routes to correct parser
+// ─────────────────────────────────────────────────────────────────────────────
+function handleFile(file) {
+  if (!file) return;
+  showError(''); showWarn('');
+
+  const name = file.name.toLowerCase();
+  if (!name.endsWith('.xls') && !name.endsWith('.xlsx')) {
+    showError('Please upload a .xls or .xlsx report file.');
+    return;
+  }
+
+  const reader = new FileReader();
+
+  if (name.endsWith('.xlsx')) {
+    // ── Format 1: Outlet-Item Wise Report (.xlsx) ──
+    reader.onload = e => parseOutletXlsx(e.target.result, file.name);
+    reader.readAsArrayBuffer(file);
+  } else {
+    // ── Format 2: Item Summary (.xls) — usually HTML in disguise ──
+    reader.onload = e => {
+      const txt = e.target.result;
+      if (txt.trim().startsWith('<')) {
+        parseItemSummaryHtml(txt, file.name);
+      } else {
+        // Genuine binary XLS — fall back to SheetJS
+        const r2 = new FileReader();
+        r2.onload = ev => parseOutletXlsx(ev.target.result, file.name);
+        r2.readAsArrayBuffer(file);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // Update upload zone UI
+  dropZone.classList.add('has-file');
+  dropZone.querySelector('p').innerHTML = `<strong>✅ ${file.name}</strong>`;
+  dropZone.querySelector('.hint').textContent = 'Click to upload a different file';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FORMAT 1 — Outlet-Item Wise Report (.xlsx)
+// Row structure: [taxable, restaurant, category, item_name, qty, ...]
+// ─────────────────────────────────────────────────────────────────────────────
+function parseOutletXlsx(buffer, filename) {
+  if (typeof XLSX === 'undefined') { showError('SheetJS library not loaded. Check internet connection.'); return; }
+
+  const wb   = XLSX.read(buffer, { type: 'array' });
+  const ws   = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+  // Report date is in row 0, column 1
+  let reportDate = '';
+  if (rows[0] && String(rows[0][0]).toLowerCase().includes('date')) {
+    reportDate = String(rows[0][1] || '');
+  }
+
+  const SKIP_FLAGS = ['total','min.','max.','avg.','sub total','name:','date:'];
+
+  const items = [];
+  rows.forEach(row => {
+    const flag     = String(row[0] || '').trim().toLowerCase();
+    const itemName = String(row[3] || '').trim();
+    const qty      = parseFloat(row[4]) || 0;
+    const category = String(row[2] || '').trim();
+
+    if (SKIP_FLAGS.includes(flag)) return;   // summary/header row — skip
+    if (!itemName || qty === 0) return;
+
+    const type = detectType(itemName);
+    if (type) items.push({ name: itemName, category, type, qty });
+  });
+
+  if (!items.length) {
+    showError('No chicken portion items found. Please check this is the correct Outlet-Item Wise Report.');
+    return;
+  }
+
+  $('footNote').textContent = reportDate ? 'Report period: ' + reportDate : filename;
+  renderTable(items);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FORMAT 2 — Item Summary (.xls, HTML export from POS)
+// Row structure: [empty, item_name, sku, qty_sold, ...]
+// ─────────────────────────────────────────────────────────────────────────────
+function parseItemSummaryHtml(html, filename) {
+  const doc  = new DOMParser().parseFromString(html, 'text/html');
+  const rows = Array.from(doc.querySelectorAll('tr'));
+
+  // ── Detect wrong file type: Sales Summary has numeric bill numbers in col 0 ──
+  // Check first few data rows — if col[0] looks like a bill number (all digits), wrong file
+  let billRowCount = 0;
+  rows.forEach(row => {
+    const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim());
+    if (cells.length > 5 && /^\d{4,}$/.test(cells[0])) billRowCount++;
+  });
+  if (billRowCount > 3) {
+    showError(
+      '⚠️ This looks like a Sales Summary file (bill-by-bill transactions). ' +
+      'That report does not contain item names, so chicken counts cannot be calculated from it. ' +
+      'Please upload one of these instead:\n' +
+      '• Item Summary (.xls) — from your POS "Item Summary" report\n' +
+      '• Outlet-Item Wise Report (.xlsx) — from your POS "Outlet-Item Wise Report (Row)"'
+    );
+    // Reset upload zone
+    const dz = $('dropZone');
+    dz.classList.remove('has-file');
+    dz.querySelector('p').innerHTML = '<strong>Upload today\'s item report</strong>';
+    dz.querySelector('.hint').textContent = 'Supports: Item Summary .xls | Outlet-Item Wise Report .xlsx';
+    return;
+  }
+
+  let reportDate = '';
+  rows.forEach(row => {
+    const m = row.textContent.match(/From\s+(\d{2}-\d{2}-\d{4})/i);
+    if (m) reportDate = m[1];
+  });
+
+  const items = [];
+  let currentCategory = '';
+
+  rows.forEach(row => {
+    const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim());
+    if (!cells.length) return;
+
+    // Single-cell row = category header (skip "total" rows)
+    if (cells.filter(Boolean).length === 1 && !cells[0].toLowerCase().includes('total')) {
+      currentCategory = cells[0]; return;
+    }
+    if (cells[0] && cells[0].toLowerCase().includes('total')) return;
+
+    if (cells.length >= 4 && cells[1]) {
+      const name = cells[1];
+      const qty  = parseFloat(cells[cells.length - 2]) || 0;
+      const type = detectType(name);
+      if (type) items.push({ name, category: currentCategory, type, qty });
+    }
+  });
+
+  if (!items.length) {
+    showError('No chicken portion items found. Please check this is the correct Item Summary file.');
+    return;
+  }
+
+  $('footNote').textContent = reportDate ? 'Report date: ' + reportDate : filename;
+  renderTable(items);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render the report table and update calculation
+// ─────────────────────────────────────────────────────────────────────────────
+function renderTable(items) {
+  const tbody = $('reportBody');
+  const tfoot = $('reportFoot');
+  tbody.innerHTML = '';
+
+  let lastCat = null;
+  let totalQtr = 0, totalHalf = 0, totalFull = 0;
+  let grandQty = 0;
+
+  items.forEach(item => {
+    // Insert category header row when category changes
+    if (item.category !== lastCat) {
+      lastCat = item.category;
+      const cr = document.createElement('tr');
+      cr.className = 'cat-row';
+      cr.innerHTML = `<td colspan="4">${item.category || 'Uncategorised'}</td>`;
+      tbody.appendChild(cr);
+    }
+
+    let badgeClass, badgeLabel;
+    switch (item.type) {
+      case 'bulk_qtr':  badgeClass = 'badge-bulk'; badgeLabel = 'Bulk (Qtr)';  totalQtr  += item.qty; break;
+      case 'bulk_half': badgeClass = 'badge-bulk'; badgeLabel = 'Bulk (Half)'; totalHalf += item.qty; break;
+      case 'qtr':       badgeClass = 'badge-qtr';  badgeLabel = 'Quarter';     totalQtr  += item.qty; break;
+      case 'half':      badgeClass = 'badge-half'; badgeLabel = 'Half';        totalHalf += item.qty; break;
+      default:          badgeClass = 'badge-full'; badgeLabel = 'Full';        totalFull += item.qty;
+    }
+    grandQty += item.qty;
+
+    const tr = document.createElement('tr');
+    if (item.type.startsWith('bulk')) tr.className = 'bulk-row';
+    tr.innerHTML = `
+      <td>${item.name}</td>
+      <td>${item.category || '—'}</td>
+      <td><span class="badge ${badgeClass}">${badgeLabel}</span></td>
+      <td class="r">${item.qty}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  tfoot.innerHTML = `
+    <tr class="total-row">
+      <td colspan="3">Total items</td>
+      <td class="r">${grandQty}</td>
+    </tr>`;
+
+  $('noDataMsg').style.display   = 'none';
+  $('reportTable').style.display = '';
+
+  updateDisplay(totalQtr, totalHalf, totalFull);
+  showTab('report');
+}
+</script>
+</body>
+</html>
